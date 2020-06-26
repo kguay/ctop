@@ -22,15 +22,18 @@ while read B dummy; do
 done
 }
 
-echo -e ${BLUE}REQUESTED RESOURCES BY NODE
+echo -e ${BLUE}REQUESTED RESOURCES BY NODE${NC}
 
 # get list of nodes
 nodes=`pbsnodes -av | grep "^[^ ]"`
 arr=( $nodes )
-arr=($(for l in ${arr[@]}; do echo $l; done | sort))
+arr=($(for l in ${arr[@]}; do echo $l; done | sort -V))
+
 for node in "${arr[@]}"
 do
 
+  state=`pbsnodes -v $node|grep 'state ='|tr -d '[:space:]'`
+  state=${state##*=}
   cpu_used=`pbsnodes -v $node|grep resources_assigned.ncpus|tr -d '[:space:]'`
   cpu_used=${cpu_used##*=}
   cpu_avail=`pbsnodes -v $node|grep resources_available.ncpus|tr -d '[:space:]'`
@@ -42,13 +45,22 @@ do
   mem_avail=${mem_avail##*=}
   mem_avail=`echo $mem_avail | human_print`
 
+  # handle unsable nodes
+  # https://www.altair.com/pdfs/pbsworks/PBSRefGuide18.2.3.pdf
+  # 8.5 Vnode States
+  if [[ $state == *down* ]]; then 
+    echo
+    echo -e "${RED}$node is NOT available${NC}"
+    continue
+  fi
+
   # skip iteration if c1 or c2
   if [ $cpu_avail -lt 1 ]; then
     continue
   fi
 
   echo
-  echo -e "${BLUE}$node"
+  echo -e "${BLUE}$node${NC}"
 
   # progress bars (cpu)
   cpu_bar=""
