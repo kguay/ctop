@@ -45,6 +45,11 @@ do
   mem_avail=${mem_avail##*=}
   mem_avail=`echo $mem_avail | human_print`
 
+  jobs=`pbsnodes -v $node|grep 'jobs ='|tr -d '[:space:]'`
+  jobs=${jobs##*=}
+  jobs=(${jobs//,/ })
+  jobs=($(for l in ${jobs[@]}; do echo ${l%%\/*}; done | uniq))
+
   # handle unsable nodes
   # https://www.altair.com/pdfs/pbsworks/PBSRefGuide18.2.3.pdf
   # 8.5 Vnode States
@@ -104,4 +109,9 @@ do
 
   printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $cpu_bar "    CPU: "$cpu_used"/"$cpu_avail
   printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $mem_bar "    MEM: "$mem_used"/"$mem_avail"gb"
+  
+  if [ -n "$jobs" ]; then
+    echo "running jobs: "${jobs[@]}
+  fi
+
 done
