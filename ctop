@@ -59,8 +59,8 @@ arr=($(for l in ${arr[@]}; do echo $l; done | sort -V))
 # print table header if text-only mode
 if [ $t_flag = true ]; then
   echo 
-  echo " node cpu_used cpu_avail %cpu mem_used mem_avail %mem #jobs"
-  echo "----- -------- --------- ---- -------- --------- ---- -----" 
+  echo " node cpu_used cpu_avail %cpu mem_used(gb) mem_avail(gb) %mem #jobs"
+  echo "----- -------- --------- ---- ------------ ------------- ---- -----" 
 fi
 
 for node in "${arr[@]}"
@@ -150,7 +150,7 @@ do
 
   # print out results
   if [ $t_flag = true ]; then
-    printf "${STATUS_COLOR}%5s %8d %9d %4s %8d %9d %4s %5d${NC}\n" $node $cpu_used $cpu_avail $(( $cpu_used*100/$cpu_avail ))% $mem_used $mem_avail $(( $mem_used*100/$mem_avail ))% ${#jobs[@]}
+    printf "${STATUS_COLOR}%5s %8d %9d %4s %12d %13d %4s %5d${NC}\n" $node $cpu_used $cpu_avail $(( $cpu_used*100/$cpu_avail ))% $mem_used $mem_avail $(( $mem_used*100/$mem_avail ))% ${#jobs[@]}
   else
     printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $cpu_bar "    CPU: "$cpu_used"/"$cpu_avail
     printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $mem_bar "    MEM: "$mem_used"/"$mem_avail"gb"
