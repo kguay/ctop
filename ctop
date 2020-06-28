@@ -22,6 +22,33 @@ while read B dummy; do
 done
 }
 
+j_flag=false
+t_flag=false
+
+# get flags from command line
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      echo "ctop - PBS Pro monitor for high performance computers"
+      echo " "
+      echo "Usage: ctop [options]"
+      echo "options:"
+      echo "-h, --help                show brief help"
+      echo "-j,                       show running job ids, otherwise show number of running jobs"
+      echo "-t,                       show results in text only mode"
+      exit 0
+      ;;
+    -j)
+      j_flag=true
+      shift
+      ;;
+    -t)
+      t_flag=true
+      shift
+      ;;
+  esac
+done
+
 echo -e ${BLUE}REQUESTED RESOURCES BY NODE${NC}
 
 # get list of nodes
@@ -29,9 +56,17 @@ nodes=`pbsnodes -av | grep "^[^ ]"`
 arr=( $nodes )
 arr=($(for l in ${arr[@]}; do echo $l; done | sort -V))
 
+# print table header if text-only mode
+if [ $t_flag = true ]; then
+  echo 
+  echo " node cpu_used cpu_avail %cpu mem_used mem_avail %mem #jobs"
+  echo "----- -------- --------- ---- -------- --------- ---- -----" 
+fi
+
 for node in "${arr[@]}"
 do
 
+  # collect information from pbsnodes commands
   state=`pbsnodes -v $node|grep 'state ='|tr -d '[:space:]'`
   state=${state##*=}
   cpu_used=`pbsnodes -v $node|grep resources_assigned.ncpus|tr -d '[:space:]'`
@@ -48,14 +83,18 @@ do
   jobs=`pbsnodes -v $node|grep 'jobs ='|tr -d '[:space:]'`
   jobs=${jobs##*=}
   jobs=(${jobs//,/ })
-  jobs=($(for l in ${jobs[@]}; do echo ${l%%\/*}; done | uniq))
+  jobs=($(for l in ${jobs[@]}; do echo ${l%%.*}; done | uniq))
 
   # handle unsable nodes
   # https://www.altair.com/pdfs/pbsworks/PBSRefGuide18.2.3.pdf
   # 8.5 Vnode States
-  if [[ $state == *down* ]]; then 
-    echo
-    echo -e "${RED}$node is NOT available${NC}"
+  if [[ $state == *down* ]]; then
+    if [ $t_flag = true ]; then
+      printf "${RED}%5s unavailable${NC}\n" $node
+    else
+      echo
+      echo -e "${RED}$node is NOT available${NC}"
+    fi
     continue
   fi
 
@@ -64,8 +103,10 @@ do
     continue
   fi
 
-  echo
-  echo -e "${BLUE}$node${NC}"
+  if [ $t_flag = false ]; then
+    echo
+    echo -e "${BLUE}$node${NC}"
+  fi
 
   # progress bars (cpu)
   cpu_bar=""
@@ -107,11 +148,17 @@ do
     STATUS_COLOR=$NC
   fi
 
-  printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $cpu_bar "    CPU: "$cpu_used"/"$cpu_avail
-  printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $mem_bar "    MEM: "$mem_used"/"$mem_avail"gb"
-  
-  if [ -n "$jobs" ]; then
-    echo "running jobs: "${jobs[@]}
+  # print out results
+  if [ $t_flag = true ]; then
+    printf "${STATUS_COLOR}%5s %8d %9d %4s %8d %9d %4s %5d${NC}\n" $node $cpu_used $cpu_avail $(( $cpu_used*100/$cpu_avail ))% $mem_used $mem_avail $(( $mem_used*100/$mem_avail ))% ${#jobs[@]}
+  else
+    printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $cpu_bar "    CPU: "$cpu_used"/"$cpu_avail
+    printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $mem_bar "    MEM: "$mem_used"/"$mem_avail"gb"
+    printf "${YELLOW}%s%d${NC}\n" "    # of running jobs: " ${#jobs[@]}
+  fi  
+
+  if [ -n "$jobs" ] && [ $j_flag = true ]; then
+    echo "    running jobs: "${jobs[@]}
   fi
 
 done
