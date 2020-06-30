@@ -23,7 +23,7 @@ done
 }
 
 j_flag=false
-t_flag=false
+t_flag=true
 
 # get flags from command line
 while test $# -gt 0; do
@@ -35,16 +35,20 @@ while test $# -gt 0; do
       echo "options:"
       echo "-h, --help                show brief help"
       echo "-j,                       show running job ids, otherwise show number of running jobs"
-      echo "-t,                       show results in text only mode"
+      echo "-g,                       show results in graphic mode, otherwise show in text-only mode"
       exit 0
       ;;
     -j)
       j_flag=true
       shift
       ;;
-    -t)
-      t_flag=true
+    -g)
+      t_flag=false
       shift
+      ;;
+    *)
+      echo "Invalid option, see help (-h)"
+      exit 0
       ;;
   esac
 done
@@ -59,8 +63,8 @@ arr=($(for l in ${arr[@]}; do echo $l; done | sort -V))
 # print table header if text-only mode
 if [ $t_flag = true ]; then
   echo 
-  echo " node cpu_used cpu_avail %cpu mem_used(gb) mem_avail(gb) %mem #jobs"
-  echo "----- -------- --------- ---- ------------ ------------- ---- -----" 
+  echo " node    cpu     mem(gb)  #jobs"
+  echo "----- --------- --------- -----" 
 fi
 
 for node in "${arr[@]}"
@@ -150,7 +154,7 @@ do
 
   # print out results
   if [ $t_flag = true ]; then
-    printf "${STATUS_COLOR}%5s %8d %9d %4s %12d %13d %4s %5d${NC}\n" $node $cpu_used $cpu_avail $(( $cpu_used*100/$cpu_avail ))% $mem_used $mem_avail $(( $mem_used*100/$mem_avail ))% ${#jobs[@]}
+    printf "${STATUS_COLOR}%5s %9s %9s %5d${NC}\n" $node "${cpu_used}/${cpu_avail}" "${mem_used}/${mem_avail}" ${#jobs[@]}
   else
     printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $cpu_bar "    CPU: "$cpu_used"/"$cpu_avail
     printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $mem_bar "    MEM: "$mem_used"/"$mem_avail"gb"
