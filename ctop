@@ -56,7 +56,7 @@ done
 echo -e ${BLUE}REQUESTED RESOURCES BY NODE${NC}
 
 # get list of nodes
-nodes=`pbsnodes -av | grep "^[^ ]"`
+nodes=`pbsnodes -av| grep "^[^ ]"`
 arr=( $nodes )
 arr=($(for l in ${arr[@]}; do echo $l; done | sort -V))
 
@@ -70,21 +70,23 @@ fi
 for node in "${arr[@]}"
 do
 
+  node_info=`pbsnodes -v $node`
+
   # collect information from pbsnodes commands
-  state=`pbsnodes -v $node|grep 'state ='|tr -d '[:space:]'`
+  state=`echo "$node_info"|grep 'state ='|tr -d '[:space:]'`
   state=${state##*=}
-  cpu_used=`pbsnodes -v $node|grep resources_assigned.ncpus|tr -d '[:space:]'`
+  cpu_used=`echo "$node_info"|grep resources_assigned.ncpus|tr -d '[:space:]'`
   cpu_used=${cpu_used##*=}
-  cpu_avail=`pbsnodes -v $node|grep resources_available.ncpus|tr -d '[:space:]'`
+  cpu_avail=`echo "$node_info"|grep resources_available.ncpus|tr -d '[:space:]'`
   cpu_avail=${cpu_avail##*=}
-  mem_used=`pbsnodes -v $node|grep resources_assigned.mem|tr -d '[:space:]'`
+  mem_used=`echo "$node_info"|grep resources_assigned.mem|tr -d '[:space:]'`
   mem_used=${mem_used##*=}
   mem_used=`echo $mem_used | human_print`
-  mem_avail=`pbsnodes -v $node|grep resources_available.mem|tr -d '[:space:]'`
+  mem_avail=`echo "$node_info"|grep resources_available.mem|tr -d '[:space:]'`
   mem_avail=${mem_avail##*=}
   mem_avail=`echo $mem_avail | human_print`
 
-  jobs=`pbsnodes -v $node|grep 'jobs ='|tr -d '[:space:]'`
+  jobs=`echo "$node_info"|grep 'jobs ='|tr -d '[:space:]'`
   jobs=${jobs##*=}
   jobs=(${jobs//,/ })
   jobs=($(for l in ${jobs[@]}; do echo ${l%%.*}; done | uniq))
