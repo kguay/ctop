@@ -56,21 +56,24 @@ done
 echo -e ${BLUE}REQUESTED RESOURCES BY NODE${NC}
 
 # get list of nodes
-nodes=`pbsnodes -av| grep "^[^ ]"`
+all_nodes_info=`pbsnodes -av`
+nodes=`echo "$all_nodes_info"| grep "^[^ ]"`
 arr=( $nodes )
 arr=($(for l in ${arr[@]}; do echo $l; done | sort -V))
 
 # print table header if text-only mode
 if [ $t_flag = true ]; then
   echo 
-  echo " node    cpu     mem(gb)  #jobs"
-  echo "----- --------- --------- -----" 
+  echo " node   cpu   %cpu  mem(gb)  %mem #jobs"
+  echo "----- ------- ---- --------- ---- -----" 
 fi
 
 for node in "${arr[@]}"
 do
 
   node_info=`pbsnodes -v $node`
+  # alternatively, use the previously collected info
+  # node_info=`echo "$all_nodes_info"|awk '/^'$node'$/,/^$/'`
 
   # collect information from pbsnodes commands
   state=`echo "$node_info"|grep 'state ='|tr -d '[:space:]'`
@@ -156,7 +159,7 @@ do
 
   # print out results
   if [ $t_flag = true ]; then
-    printf "${STATUS_COLOR}%5s %9s %9s %5d${NC}\n" $node "${cpu_used}/${cpu_avail}" "${mem_used}/${mem_avail}" ${#jobs[@]}
+    printf "${STATUS_COLOR}%5s %7s %4s %9s %4s %5d${NC}\n" $node "${cpu_used}/${cpu_avail}" "$(( $cpu_used*100/$cpu_avail ))%" "${mem_used}/${mem_avail}" "$(( $mem_used*100/$mem_avail ))%" ${#jobs[@]}
   else
     printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $cpu_bar "    CPU: "$cpu_used"/"$cpu_avail
     printf "${STATUS_COLOR}%*s\r${YELLOW}%s${NC}\n" "$(tput cols)" $mem_bar "    MEM: "$mem_used"/"$mem_avail"gb"
